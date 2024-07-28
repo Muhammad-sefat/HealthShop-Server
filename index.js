@@ -53,6 +53,17 @@ async function run() {
       res.send(data);
     });
 
+    // Route to fetch medicines by category
+    app.get("/medicines/:category", async (req, res) => {
+      const category = req.params.category;
+      try {
+        const medicines = await medicineCollection.find({ category }).toArray();
+        res.status(200).json(medicines);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch medicines" });
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
