@@ -25,6 +25,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const usersCollection = client.db("HealthShop").collection("users");
+    const medicineCollection = client.db("HealthShop").collection("medicine");
 
     // save user data in database
     app.put("/user", async (req, res) => {
@@ -44,6 +45,12 @@ async function run() {
       };
       const result = await usersCollection.updateOne(query, updateDoc, options);
       res.send(result);
+    });
+
+    // get all medicine
+    app.get("/allmedicine", async (req, res) => {
+      const data = await medicineCollection.find().toArray();
+      res.send(data);
     });
 
     await client.db("admin").command({ ping: 1 });
