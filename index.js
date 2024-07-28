@@ -26,6 +26,7 @@ async function run() {
     await client.connect();
     const usersCollection = client.db("HealthShop").collection("users");
     const medicineCollection = client.db("HealthShop").collection("medicine");
+    const categoryCollection = client.db("HealthShop").collection("category");
 
     // save user data in database
     app.put("/user", async (req, res) => {
@@ -50,6 +51,12 @@ async function run() {
     // get all medicine
     app.get("/allmedicine", async (req, res) => {
       const data = await medicineCollection.find().toArray();
+      res.send(data);
+    });
+
+    // get all category medicine
+    app.get("/allcategory", async (req, res) => {
+      const data = await categoryCollection.find().toArray();
       res.send(data);
     });
 
