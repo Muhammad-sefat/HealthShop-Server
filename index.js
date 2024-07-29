@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -75,9 +75,21 @@ async function run() {
     // save cart medicine in database
     app.put("/add-to-cart", async (req, res) => {
       const product = req.body;
-      console.log(product);
-      const result = await cartCollection.insertOne(product);
-      res.send(result);
+      const query = { email: product.email, name: product.name };
+
+      try {
+        const existingProduct = await cartCollection.findOne(query);
+
+        if (existingProduct) {
+          return res.status(400).send({ message: "Product already in cart" });
+        }
+        delete product._id;
+        const result = await cartCollection.insertOne(product);
+        res.send(result);
+      } catch (error) {
+        console.error("Error adding product to cart:", error);
+        res.status(500).send({ error: "Failed to add product to cart" });
+      }
     });
 
     // get all medicine by email
@@ -93,14 +105,45 @@ async function run() {
     });
 
     // get total cart medicine
-    app.get("/cart-count/:email", async (req, res) => {
+    app.get("/cart", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await cartCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // Backend - Clear all items from the cart for a specific user
+    app.delete("/cart/clear", async (req, res) => {
+      const { email } = req.query;
+
       try {
-        const email = req.params.email;
-        const itemCount = await cartCollection.countDocuments({ email });
-        res.send({ count: itemCount });
+        const result = await cartCollection.deleteMany({ email });
+        res.send({ message: "All items removed from cart", result });
       } catch (error) {
-        console.error("Error fetching cart count:", error);
-        res.status(500).send({ error: "Failed to fetch cart count" });
+        console.error("Error clearing cart:", error);
+        res.status(500).send({ error: "Failed to clear cart" });
+      }
+    });
+
+    // Backend - Delete a single item from the cart
+    app.delete("/cart/item/:id", async (req, res) => {
+      const { id } = req.params;
+      const { email } = req.query;
+
+      try {
+        const result = await cartCollection.deleteOne({
+          _id: new ObjectId(id),
+          email: email,
+        });
+
+        if (result.deletedCount === 0) {
+          return res.status(404).send({ error: "Item not found" });
+        }
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error deleting cart item:", error);
+        res.status(500).send({ error: "Failed to delete cart item" });
       }
     });
 
