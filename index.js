@@ -75,19 +75,33 @@ async function run() {
     // save cart medicine in database
     app.put("/add-to-cart", async (req, res) => {
       const product = req.body;
-      const query = { email: product.email, "items._id": product._id };
-      const update = {
-        $setOnInsert: {
-          email: product.email,
-          items: [],
-        },
-        $push: {
-          item: product,
-        },
-      };
-      const options = { upsert: true };
-      const result = await cartCollection.updateOne(query, update, options);
+      console.log(product);
+      const result = await cartCollection.insertOne(product);
       res.send(result);
+    });
+
+    // get all medicine by email
+    app.get("/cart/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const products = await cartCollection.find({ email }).toArray();
+        res.send(products);
+      } catch (error) {
+        console.error("Error fetching cart data:", error);
+        res.status(500).send({ error: "Failed to fetch cart data" });
+      }
+    });
+
+    // get total cart medicine
+    app.get("/cart-count/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const itemCount = await cartCollection.countDocuments({ email });
+        res.send({ count: itemCount });
+      } catch (error) {
+        console.error("Error fetching cart count:", error);
+        res.status(500).send({ error: "Failed to fetch cart count" });
+      }
     });
 
     await client.db("admin").command({ ping: 1 });
