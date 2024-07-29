@@ -27,6 +27,7 @@ async function run() {
     const usersCollection = client.db("HealthShop").collection("users");
     const medicineCollection = client.db("HealthShop").collection("medicine");
     const categoryCollection = client.db("HealthShop").collection("category");
+    const cartCollection = client.db("HealthShop").collection("cartproduct");
 
     // save user data in database
     app.put("/user", async (req, res) => {
@@ -69,6 +70,24 @@ async function run() {
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch medicines" });
       }
+    });
+
+    // save cart medicine in database
+    app.put("/add-to-cart", async (req, res) => {
+      const product = req.body;
+      const query = { email: product.email, "items._id": product._id };
+      const update = {
+        $setOnInsert: {
+          email: product.email,
+          items: [],
+        },
+        $push: {
+          item: product,
+        },
+      };
+      const options = { upsert: true };
+      const result = await cartCollection.updateOne(query, update, options);
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
