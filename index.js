@@ -81,10 +81,16 @@ async function run() {
         const existingProduct = await cartCollection.findOne(query);
 
         if (existingProduct) {
-          return res.status(400).send({ message: "Product already in cart" });
+          const updatedProduct = await cartCollection.updateOne(query, {
+            $inc: { quantity: 1 },
+          });
+          return res.send(updatedProduct);
         }
         delete product._id;
-        const result = await cartCollection.insertOne(product);
+        const result = await cartCollection.insertOne({
+          ...product,
+          quantity: 1,
+        });
         res.send(result);
       } catch (error) {
         console.error("Error adding product to cart:", error);
@@ -144,6 +150,21 @@ async function run() {
       } catch (error) {
         console.error("Error deleting cart item:", error);
         res.status(500).send({ error: "Failed to delete cart item" });
+      }
+    });
+
+    // update quentity
+    app.put("/cart/update-quantity", async (req, res) => {
+      const { email, _id, quantity } = req.body;
+      try {
+        const result = await cartCollection.updateOne(
+          { email, _id },
+          { $set: { quantity } }
+        );
+        res.send(result);
+      } catch (error) {
+        console.error("Error updating quantity:", error);
+        res.status(500).send({ error: "Failed to update quantity" });
       }
     });
 
