@@ -32,6 +32,9 @@ async function run() {
     const categoryCollection = client.db("HealthShop").collection("category");
     const cartCollection = client.db("HealthShop").collection("cartproduct");
     const paymentsCollection = client.db("HealthShop").collection("payment");
+    const testimonialCollection = client
+      .db("HealthShop")
+      .collection("testimonial");
 
     //create-payment-intent
     app.post("/create-payment-intent", async (req, res) => {
@@ -46,6 +49,7 @@ async function run() {
           currency: "usd",
           payment_method_types: ["card"],
         });
+        console.log(client_secret);
         res.send({ clientSecret: client_secret });
       } catch (error) {
         res.status(500).send({ error: error.message });
@@ -84,6 +88,12 @@ async function run() {
       res.send(data);
     });
 
+    // get all testimonials
+    app.get("/testimonial", async (req, res) => {
+      const data = await testimonialCollection.find().toArray();
+      res.send(data);
+    });
+
     // Route to fetch medicines by category
     app.get("/medicines/:category", async (req, res) => {
       const category = req.params.category;
@@ -104,20 +114,39 @@ async function run() {
         const existingProduct = await cartCollection.findOne(query);
 
         if (existingProduct) {
-          const updatedProduct = await cartCollection.updateOne(query, {
-            $inc: { quantity: 1 },
-          });
-          return res.send(updatedProduct);
+          return res.status(400).send({ error: "Product already in cart" });
         }
+
         delete product._id;
         const result = await cartCollection.insertOne({
           ...product,
           quantity: 1,
         });
-        res.send(result);
+        res.status(201).send(result);
       } catch (error) {
         console.error("Error adding product to cart:", error);
         res.status(500).send({ error: "Failed to add product to cart" });
+      }
+    });
+
+    // update item
+    app.put("/update-cart-item", async (req, res) => {
+      const { email, name, quantityChange } = req.body;
+      const query = { email, name };
+
+      try {
+        const updatedProduct = await cartCollection.updateOne(query, {
+          $inc: { quantity: quantityChange },
+        });
+
+        if (updatedProduct.modifiedCount > 0) {
+          return res.status(200).send({ message: "Product quantity updated" });
+        } else {
+          return res.status(400).send({ error: "Product not found in cart" });
+        }
+      } catch (error) {
+        console.error("Error updating product quantity:", error);
+        res.status(500).send({ error: "Failed to update product quantity" });
       }
     });
 
