@@ -3,9 +3,9 @@ const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 const cookieParser = require("cookie-parser");
 const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
-require("dotenv").config();
 const port = process.env.PORT || 5000;
 
 app.use(cors());
@@ -36,19 +36,17 @@ async function run() {
     //create-payment-intent
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
-      const amount = parseFloat(price) * 100;
+      const amount = parseFloat(price * 100);
       if (!price || amount < 1)
         return res.status(400).send({ error: "Invalid price" });
 
       try {
-        const paymentIntent = await stripe.paymentIntents.create({
+        const { client_secret } = await stripe.paymentIntents.create({
           amount: amount,
           currency: "usd",
-          automatic_payment_methods: {
-            enabled: true,
-          },
+          payment_method_types: ["card"],
         });
-        res.send({ clientSecret: paymentIntent.client_secret });
+        res.send({ clientSecret: client_secret });
       } catch (error) {
         res.status(500).send({ error: error.message });
       }
