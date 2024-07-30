@@ -3,11 +3,14 @@ const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.dbn21dt.mongodb.net/?appName=Cluster0`;
 
@@ -28,6 +31,28 @@ async function run() {
     const medicineCollection = client.db("HealthShop").collection("medicine");
     const categoryCollection = client.db("HealthShop").collection("category");
     const cartCollection = client.db("HealthShop").collection("cartproduct");
+    const paymentsCollection = client.db("HealthShop").collection("payment");
+
+    //create-payment-intent
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseFloat(price) * 100;
+      if (!price || amount < 1)
+        return res.status(400).send({ error: "Invalid price" });
+
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: "usd",
+          automatic_payment_methods: {
+            enabled: true,
+          },
+        });
+        res.send({ clientSecret: paymentIntent.client_secret });
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
+    });
 
     // save user data in database
     app.put("/user", async (req, res) => {
@@ -158,13 +183,24 @@ async function run() {
       const { email, _id, quantity } = req.body;
       try {
         const result = await cartCollection.updateOne(
-          { email, _id },
+          { email, _id: new ObjectId(_id) },
           { $set: { quantity } }
         );
         res.send(result);
       } catch (error) {
         console.error("Error updating quantity:", error);
         res.status(500).send({ error: "Failed to update quantity" });
+      }
+    });
+
+    // save payment data in paymentCollection
+    app.post("/payment", async (req, res) => {
+      const body = req.body;
+      try {
+        const result = await paymentsCollection.insertOne(body);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: "Failed to save payment info" });
       }
     });
 
