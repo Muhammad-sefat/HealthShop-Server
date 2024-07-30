@@ -76,6 +76,14 @@ async function run() {
       res.send(result);
     });
 
+    // get user data by email from usersCollection
+    app.get("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await usersCollection.findOne(query);
+      res.send(result);
+    });
+
     // get all medicine
     app.get("/allmedicine", async (req, res) => {
       const data = await medicineCollection.find().toArray();
