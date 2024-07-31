@@ -49,7 +49,6 @@ async function run() {
           currency: "usd",
           payment_method_types: ["card"],
         });
-        console.log(client_secret);
         res.send({ clientSecret: client_secret });
       } catch (error) {
         res.status(500).send({ error: error.message });
@@ -82,6 +81,44 @@ async function run() {
       const query = { email: email };
       const result = await usersCollection.findOne(query);
       res.send(result);
+    });
+
+    // get all user from database
+    app.get("/user", async (req, res) => {
+      const user = await usersCollection.find().toArray();
+      res.send(user);
+    });
+
+    // update userrole
+    app.put("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedRole = req.body.role;
+
+      try {
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { role: updatedRole } }
+        );
+        res.send(result);
+      } catch (error) {
+        console.error("Error updating role:", error);
+        res.status(500).send("Failed to update role");
+      }
+    });
+
+    // delete user
+    app.delete("/user/:id", async (req, res) => {
+      const id = req.params.id;
+
+      try {
+        const result = await usersCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        res.send(result);
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).send("Failed to delete user");
+      }
     });
 
     // get all medicine
