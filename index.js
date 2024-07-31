@@ -239,6 +239,17 @@ async function run() {
       }
     });
 
+    app.get("/discount-products", async (req, res) => {
+      try {
+        const query = { discount: { $exists: true } };
+        const discountProducts = await medicineCollection.find(query).toArray();
+        res.status(200).send(discountProducts);
+      } catch (error) {
+        console.error("Error fetching discount products:", error);
+        res.status(500).send({ error: "Failed to fetch discount products" });
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
