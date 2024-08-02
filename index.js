@@ -312,6 +312,18 @@ async function run() {
       }
     });
 
+    // Add Medicine in database
+    app.post("/medicine", async (req, res) => {
+      try {
+        const medicineData = req.body;
+        const result = await medicineCollection.insertOne(medicineData);
+        res.status(201).send(result);
+      } catch (error) {
+        console.error("Error saving medicine data:", error);
+        res.status(500).send("Error saving medicine data");
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
