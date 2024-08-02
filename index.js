@@ -287,6 +287,20 @@ async function run() {
       }
     });
 
+    // update modal and save in database
+    app.put("/medicine/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedData = req.body;
+
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: updatedData,
+      };
+
+      const result = await medicineCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
