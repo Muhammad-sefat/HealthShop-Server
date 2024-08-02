@@ -89,7 +89,7 @@ async function run() {
       res.send(user);
     });
 
-    // update userrole
+    // update use rrole
     app.put("/user/:id", async (req, res) => {
       const id = req.params.id;
       const updatedRole = req.body.role;
@@ -299,6 +299,17 @@ async function run() {
 
       const result = await medicineCollection.updateOne(filter, updateDoc);
       res.send(result);
+    });
+
+    // Delete medicine by ID
+    app.delete("/medicine/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        await medicineCollection.deleteOne({ _id: new ObjectId(id) });
+        res.status(200).json({ message: "Medicine deleted successfully" });
+      } catch (error) {
+        res.status(500).json({ message: "Error deleting medicine", error });
+      }
     });
 
     await client.db("admin").command({ ping: 1 });
