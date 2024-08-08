@@ -8,9 +8,35 @@ const cookieParser = require("cookie-parser");
 const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "https://healthshop-972b1.web.app",
+    "https://healthshop-972b1.firebaseapp.com",
+  ],
+  credentials: true,
+  optionSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
+
+// Verify Token Middleware
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      console.log(err);
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.dbn21dt.mongodb.net/?appName=Cluster0`;
 
@@ -36,7 +62,22 @@ async function run() {
       .db("HealthShop")
       .collection("testimonial");
 
-    //create-payment-intent
+    // auth related api
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "365d",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
+    // create-payment-intent
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = parseFloat(price * 100);
@@ -84,13 +125,13 @@ async function run() {
     });
 
     // get all user from database
-    app.get("/user", async (req, res) => {
+    app.get("/user", verifyToken, async (req, res) => {
       const user = await usersCollection.find().toArray();
       res.send(user);
     });
 
-    // update use rrole
-    app.put("/user/:id", async (req, res) => {
+    // update use role
+    app.put("/user/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const updatedRole = req.body.role;
 
@@ -107,7 +148,7 @@ async function run() {
     });
 
     // delete user
-    app.delete("/user/:id", async (req, res) => {
+    app.delete("/user/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
 
       try {
@@ -200,6 +241,7 @@ async function run() {
       try {
         const email = req.params.email;
         const products = await cartCollection.find({ email }).toArray();
+        console.log(products);
         res.send(products);
       } catch (error) {
         console.error("Error fetching cart data:", error);
@@ -229,7 +271,7 @@ async function run() {
     });
 
     // Backend - Delete a single item from the cart
-    app.delete("/cart/item/:id", async (req, res) => {
+    app.delete("/cart/item/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const { email } = req.query;
 
@@ -324,7 +366,7 @@ async function run() {
       }
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
