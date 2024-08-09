@@ -163,8 +163,34 @@ async function run() {
     });
 
     // get all medicine
+    // app.get("/allmedicine", async (req, res) => {
+    //   const data = await medicineCollection.find().toArray();
+    //   res.send(data);
+    // });
     app.get("/allmedicine", async (req, res) => {
-      const data = await medicineCollection.find().toArray();
+      const { sort, search } = req.query;
+      const query = {};
+
+      // Search by name or company name
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: "i" } },
+          { company: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      // Sorting by price
+      let sortOption = {};
+      if (sort === "asc") {
+        sortOption = { price: 1 }; // Ascending order
+      } else if (sort === "desc") {
+        sortOption = { price: -1 }; // Descending order
+      }
+
+      const data = await medicineCollection
+        .find(query)
+        .sort(sortOption)
+        .toArray();
       res.send(data);
     });
 
