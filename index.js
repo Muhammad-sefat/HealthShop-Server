@@ -58,6 +58,7 @@ async function run() {
     const categoryCollection = client.db("HealthShop").collection("category");
     const cartCollection = client.db("HealthShop").collection("cartproduct");
     const paymentsCollection = client.db("HealthShop").collection("payment");
+    const joinusCollection = client.db("HealthShop").collection("joinUs");
     const testimonialCollection = client
       .db("HealthShop")
       .collection("testimonial");
@@ -163,10 +164,6 @@ async function run() {
     });
 
     // get all medicine
-    // app.get("/allmedicine", async (req, res) => {
-    //   const data = await medicineCollection.find().toArray();
-    //   res.send(data);
-    // });
     app.get("/allmedicine", async (req, res) => {
       const { sort, search } = req.query;
       const query = {};
@@ -389,6 +386,26 @@ async function run() {
       } catch (error) {
         console.error("Error saving medicine data:", error);
         res.status(500).send("Error saving medicine data");
+      }
+    });
+
+    // save community data
+    app.post("/join-us", async (req, res) => {
+      const { name, email, phone, role, message } = req.body;
+      try {
+        await joinusCollection.insertOne({
+          name,
+          email,
+          phone,
+          role,
+          message,
+          joinedAt: new Date(),
+        });
+        res.status(201).send({ message: "Thank you for joining us!" });
+      } catch (error) {
+        res
+          .status(500)
+          .send({ message: "Something went wrong. Please try again later." });
       }
     });
 
