@@ -423,6 +423,17 @@ async function run() {
       }
     });
 
+    // save review into testimonialCollection
+    app.post("/review", async (req, res) => {
+      const body = req.body;
+      try {
+        const result = await testimonialCollection.insertOne(body);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: "Failed to save payment info" });
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
