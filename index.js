@@ -126,7 +126,7 @@ async function run() {
     });
 
     // get all user from database
-    app.get("/user", verifyToken, async (req, res) => {
+    app.get("/user", async (req, res) => {
       const user = await usersCollection.find().toArray();
       res.send(user);
     });
@@ -294,7 +294,7 @@ async function run() {
     });
 
     // Backend - Delete a single item from the cart
-    app.delete("/cart/item/:id", verifyToken, async (req, res) => {
+    app.delete("/cart/item/:id", async (req, res) => {
       const { id } = req.params;
       const { email } = req.query;
 
@@ -378,7 +378,7 @@ async function run() {
     });
 
     // Add Medicine in database
-    app.post("/medicine", async (req, res) => {
+    app.post("/medicine", verifyToken, async (req, res) => {
       try {
         const medicineData = req.body;
         const result = await medicineCollection.insertOne(medicineData);
@@ -409,7 +409,21 @@ async function run() {
       }
     });
 
-    // await client.db("admin").command({ ping: 1 });
+    // get data by email
+    app.get("/api/medicines", async (req, res) => {
+      const email = req.query.email;
+      try {
+        const query = { email: email };
+        const medicines = await medicineCollection.find(query).toArray();
+
+        res.status(200).json(medicines);
+      } catch (error) {
+        console.error("Error fetching medicines:", error);
+        res.status(500).send("Error fetching medicines");
+      }
+    });
+
+    await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
