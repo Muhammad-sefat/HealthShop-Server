@@ -1,16 +1,15 @@
 const express = require("express");
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const cors = require("cors");
-const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
+const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 
 const corsOptions = {
   origin: [
-    "http://localhost:5173",
     "https://healthshop-972b1.web.app",
     "https://healthshop-972b1.firebaseapp.com",
   ],
@@ -52,7 +51,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     const usersCollection = client.db("HealthShop").collection("users");
     const medicineCollection = client.db("HealthShop").collection("medicine");
     const categoryCollection = client.db("HealthShop").collection("category");
