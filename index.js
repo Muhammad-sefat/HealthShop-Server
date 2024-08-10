@@ -6,7 +6,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const jwt = require("jsonwebtoken");
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 
 const corsOptions = {
   origin: [
